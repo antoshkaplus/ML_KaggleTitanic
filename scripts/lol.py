@@ -1,4 +1,5 @@
-
+from collections import OrderedDict
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -58,8 +59,36 @@ d = d.unstack()
 
 
 # extracting title
-print data_train.Name.str.extract("\\w+\\.")
+data_train["Title"] = data_train.Name.str.extract(".*, ([a-zA-Z]*)\. .*")
+data_test["Title"] = data_test.Name.str.extract(".*, ([a-zA-Z]*)\. .*")
 
+print
+print "Titles:"
+print data_train.Title.value_counts()
+
+# want to preserve column order
+d = OrderedDict()
+d["Count"] = len
+d["Missing"] = lambda x: x.isnull().sum()
+d["Mean"] = np.mean
+print
+print data_train.groupby("Title")["Age"].agg(d)
+
+
+# fill age na values with means from Title
+
+def func(x):
+    x.fillna(x.mean(), inplace=True)
+    #print x
+    return x
+
+data_train.Age = data_train.groupby("Title").Age.apply(func)
+#print data_train.groupby("Title").apply(lambda x: x.Age.fillna(x.Age.mean(), inplace=True))
+print data_train.groupby("Title")["Age"].agg(d)
+# should do the same with test data
+
+
+# fill zero fare
 
 
 plt.show()
