@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[29]:
+# In[26]:
 
 # do reload as top level
 import research
@@ -9,10 +9,19 @@ reload(research)
 from research import *
 
 
-# In[30]:
+# In[7]:
 
+# lets put here all imports that we need
 import random 
 from sklearn.tree import DecisionTreeClassifier as DeciTree
+from sklearn.cross_validation import train_test_split
+from sklearn.grid_search import GridSearchCV
+from sklearn.cross_validation import cross_val_score
+
+
+# In[19]:
+
+
 
 
 train, mission = research.prepare_matrices()
@@ -33,18 +42,15 @@ res.to_csv("../output/random_forest.csv", index=False)
 print solver.score(X_test, y_test)
 
 
-# In[31]:
+# In[9]:
 
 # let's start with simple decision tree and make it work
 
 
-# In[39]:
-
-import random
+# In[20]:
 
 train, mission = research.prepare_matrices()
 # have to split train 80/20
-from sklearn.cross_validation import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(train, data_train.Survived, test_size=0.2, random_state=0)
 
 # criterion: gini (Gini impurity), entropy
@@ -61,21 +67,18 @@ print solver.score(X_test, y_test)
 print solver.feature_importances_ 
 
 
-# In[33]:
+# In[11]:
 
 # let's find out which passagers suck dick on the bottom of the sea
 y_test_pred = solver.predict(X_test)
 
 
-# In[38]:
+# In[12]:
 
-import random
-from sklearn.grid_search import GridSearchCV
 
 
 train, mission = research.prepare_matrices()
 # have to split train 80/20
-from sklearn.cross_validation import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(train, data_train.Survived, test_size=0.2, random_state=0)
 
 # criterion: gini (Gini impurity), entropy
@@ -95,10 +98,7 @@ cv_solver.fit(train, data_train.Survived)
 print cv_solver.best_params_
 
 
-# In[40]:
-
-import random
-from sklearn.grid_search import GridSearchCV
+# In[ ]:
 
 
 train, mission = research.prepare_matrices()
@@ -117,13 +117,11 @@ cv_solver.fit(train, data_train.Survived)
 print cv_solver.best_params_
 
 
-# In[43]:
-
-import random
-from sklearn.cross_validation import cross_val_score
+# In[27]:
 
 train, mission = research.prepare_matrices()
-solver = RandForest(n_jobs=-1, n_estimators=1000)
+#solver = RandForest(random_state=1, n_estimators=500, min_samples_split=8, min_samples_leaf=2)
+solver = RandForest(n_jobs=-1, n_estimators = 80, max_features='auto', criterion='entropy',max_depth=4)
 solver.fit(train, data_train.Survived)
 
 scores = cross_val_score(solver, train, data_train.Survived, cv=10)

@@ -11,8 +11,7 @@ get_ipython().magic(u'matplotlib inline')
 
 data_train = pd.read_csv("./../data/train.csv")
 data_test = pd.read_csv("./../data/test.csv")
-
-
+data_all = pd.concat([data_train, data_test])
 
 
 # In[11]:
