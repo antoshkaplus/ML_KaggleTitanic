@@ -14,13 +14,16 @@ data_test = pd.read_csv("./../data/test.csv")
 data_all = pd.concat([data_train, data_test])
 
 
+# after concatenation easy to pick train vs test by Survived null column
+
+
 # In[4]:
 
 print("===== survived by class and sex")
 print(data_train.groupby(["Pclass", "Sex"])["Survived"].value_counts(normalize=True))
 
 
-# In[6]:
+# In[5]:
 
 describe_fields = ["Age", "Fare", "Pclass", "SibSp", "Parch"]
 
@@ -37,9 +40,22 @@ print("===== test: females")
 print(data_test[data_test["Sex"] == "female"][describe_fields].describe())
 
 
-# In[13]:
+# In[6]:
 
 data_all.sort_values(by=["Name"]).head(50)
+
+
+# In[14]:
+
+data_all['LastName'] = data_all.Name.str.extract("(.+),.+")
+data_train['LastName'] = data_train.Name.str.extract("(.+),.+")
+
+
+# In[15]:
+
+data_train[(data_train.Parch + data_train.SibSp) >= 2].groupby(['LastName', 'Survived']).size()
+
+# is it important that woman would be not alone ... family... 
 
 
 # In[ ]:

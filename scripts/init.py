@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[10]:
+# In[2]:
 
 from collections import OrderedDict
 import numpy as np
@@ -14,21 +14,21 @@ data_test = pd.read_csv("./../data/test.csv")
 data_all = pd.concat([data_train, data_test])
 
 
-# In[11]:
+# In[3]:
 
 print "Missing data train set:"
 miss = len(data_train.index) - data_train.count()
 print 1. * miss / len(data_train.index) 
 
 
-# In[12]:
+# In[4]:
 
 print "Missing data test set:"
 miss = len(data_test.index) - data_test.count()
 print 1. * miss / len(data_test.index)
 
 
-# In[13]:
+# In[5]:
 
 # should create multiple data frames to have multiple plots
 survived = pd.DataFrame( data_train.Survived.value_counts() )
@@ -46,7 +46,7 @@ d = d.unstack()
 d.plot(kind="bar", rot=0, stacked=True)
 
 
-# In[14]:
+# In[6]:
 
 # Port of Embarkation (C = Cherbourg; Q = Queenstown; S = Southampton)
 # 2 NA
@@ -56,7 +56,7 @@ embarked = pd.DataFrame( data_train.Embarked.value_counts() )
 embarked.plot(kind="bar", rot=0, title="Distribution by place of embarkation")
 
 
-# In[15]:
+# In[7]:
 
 # feature distribution + survival
 
@@ -73,7 +73,7 @@ d = d.unstack()
 d.plot(kind="bar", rot=0, stacked=True)
 
 
-# In[16]:
+# In[8]:
 
 # extracting title
 
@@ -101,7 +101,7 @@ data_test.Title.replace("Ms", "Mrs", inplace=True)
 data_test["Title"].replace(["Mlle", "Mme"], "Miss", inplace=True)
 
 
-# In[17]:
+# In[9]:
 
 from sklearn.preprocessing import LabelEncoder
 def add_cat(data, col):
@@ -113,7 +113,7 @@ add_cat(data_train, "Title")
 add_cat(data_test, "Title")
 
 
-# In[18]:
+# In[10]:
 
 # fill age na values with means from Title
 def func(x):
@@ -137,13 +137,13 @@ incorrect = lambda data: len(data) - data.Fare.count() != 0 or (data.Fare == 0).
 if incorrect(data_train) or incorrect(data_test): raise Exception("data train or test Fare NA or 0 values")
 
 
-# In[19]:
+# In[11]:
 
 dd = pd.DataFrame(data_train[["Age", "Title"]])
 dd.boxplot(column="Age", by="Title")
 
 
-# In[29]:
+# In[12]:
 
 # alive
 p = data_train.groupby("Title")["Survived"].agg(lambda x: 1. * x.sum()/len(x)).plot(kind="bar")
@@ -151,7 +151,7 @@ p.set_ylim([0,1])
 p
 
 
-# In[21]:
+# In[13]:
 
 # this one i should change a bit
 data_train['PclassCat'] = data_train['Pclass'].astype('category')
@@ -159,7 +159,7 @@ ax = data_train.loc[data_train['Survived'] == 1].plot(kind='scatter', x='Age', y
 data_train.loc[data_train['Survived'] == 0].plot(kind='scatter', x='Age', y='Pclass', color='DarkGreen', label='Died', ax=ax)
 
 
-# In[22]:
+# In[14]:
 
 miss = len(data_train.index) - data_train.count()
 h = len(miss > 0)
@@ -171,7 +171,7 @@ else:
     print "No missing data in train set"
 
 
-# In[23]:
+# In[15]:
 
 miss = len(data_test.index) - data_test.count()
 h = len(miss > 0)
@@ -183,7 +183,7 @@ else:
     print "No missing data in test set"
 
 
-# In[24]:
+# In[16]:
 
 # add IsCabin feature
 data_train['IsCabin'] = 0
@@ -193,23 +193,49 @@ data_test['IsCabin'] = 0
 data_test.loc[data_test.Cabin.notnull(), 'IsCabin'] = 1
 
 
-# In[25]:
+# In[17]:
 
 print len(data_train[data_train.Fare.isnull()])
 print len(data_test[data_test.Fare.isnull()])
 
 
-# In[26]:
+# In[18]:
 
 # find correlation between survived and fare + woman or man
 print data_train[['Fare', 'Survived']].corr()
 
 
-# In[27]:
+# In[19]:
 
 yo = data_train.groupby(['Title', 'Pclass', 'Survived']).size().unstack()
 yo.fillna(0, inplace=True)
 print yo
+
+
+# In[34]:
+
+# working on last name
+data_all['LastName'] = data_all.Name.str.extract("(.+),.+")
+data_train['LastName'] = data_train.Name.str.extract("(.+),.+")
+data_test['LastName'] = data_train.Name.str.extract("(.+),.+")
+
+# find last names that survived
+
+#from sets import Set 
+s = data_train[data_train.Survived == 1].LastName.unique()
+survived_lastnames = set(s)
+
+sz = data_all.groupby('LastName', group_keys='lol').size()
+for (index, value) in sz.iteritems():
+    if value == 1: survived_lastnames.discard(value)
+
+# should be 3 variants 
+cond = lambda x: 1 if x in survived_lastnames else 0
+data_train['RelativeSurvived'] = data_train['LastName'].apply(cond)
+data_test['RelativeSurvived'] = data_test['LastName'].apply(cond)
+
+print "Do we have null values somewhere in LastName"
+print data_all.LastName.isnull().any()
 
 
 # In[ ]:

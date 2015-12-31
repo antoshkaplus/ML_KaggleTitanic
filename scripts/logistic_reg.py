@@ -1,12 +1,14 @@
 
 # coding: utf-8
 
-# In[36]:
+# In[43]:
 
-get_ipython().magic(u'run research.py')
+import research
+reload(research)
+from research import *
 
 
-# In[ ]:
+# In[44]:
 
 # lets put here all imports that we need
 import random 
@@ -16,26 +18,52 @@ from sklearn.grid_search import GridSearchCV
 from sklearn.cross_validation import cross_val_score
 
 
-# In[ ]:
+# In[45]:
 
-train, mission = prepare_matrices()
-# have to split train 80/20
-# classification reports asks for predicates....
-solver = LogRegCV(n_jobs=-1)
-solver.fit(train, data_train.Survived)
-res = solver.predict(mission)
-res = pd.DataFrame({"PassengerId": data_test.PassengerId, "Survived": res})
-res.to_csv("../output/logic_0.csv", index=False)
-#print solver.score(X_test, y_test)
+solver = None
+print all_cols
+def solve(cols=all_cols):
+    train, mission = prepare_matrices(cols)
+    # have to split train 80/20
+    # classification reports asks for predicates....
+    global solver
+    solver = LogRegCV(n_jobs=-1)
+    solver.fit(train, data_train.Survived)
+    res = solver.predict(mission)
+    res = pd.DataFrame({"PassengerId": data_test.PassengerId, "Survived": res})
+    res.to_csv("../output/logic_0.csv", index=False)
+    #print solver.score(X_test, y_test)
 
-#y_test_pred = solver.predict(X_test)
-#print metrics.classification_report(y_test, y_test_pred)
-#print all_cols
-#print solver.coef_
+    #y_test_pred = solver.predict(X_test)
+    #print metrics.classification_report(y_test, y_test_pred)
+    #print all_cols
+    #print solver.coef_
+    """
+    groups = data_train.groupby('Sex').groups 
+    males = groups['male']
+    females = groups['female']
 
-scores = cross_val_score(solver, train, data_train.Survived, cv=10)
-print min(scores)
+    tt = np.matrix(train)
+    p = solver.predict(tt[males])
+    print class_report(data_train.Survived[males], p)
+    
+    scores = cross_val_score(solver, train, data_train.Survived, cv=10)
+    #print min(scores)
 
+    tt = np.matrix(train)
+    p = solver.predict(tt[females])
+    print class_report(data_train.Survived[females], p)
+    """
+    scores = cross_val_score(solver, train, data_train.Survived, cv=10)
+    print min(scores)
+
+    
+#solve()
+noIsFamily = list(all_cols)
+noIsFamily.remove('IsFamily')
+solve(noIsFamily)
+    
+print solver 
 """
 solver = LogRegCV(n_jobs=-1, scoring='roc_auc')
 solver.fit(train, data_train.Survived)

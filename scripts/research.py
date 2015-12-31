@@ -8,6 +8,11 @@ reload(init)
 from init import * 
 
 
+# In[ ]:
+
+from sklearn.metrics import classification_report as class_report
+
+
 # In[154]:
 
 data_train.columns
@@ -152,7 +157,19 @@ print len(data_train.SexCat.value_counts())
 # don't need IsFamily as Family exists
 # after adding title logic reg became worth. random tree becomes better
 all_cols = ["TitleCat", "Pclass", "SexCat", "Age", "Fare", "EmbarkedCat", 
-            "SibSp", "Parch", 'Family', "CabinLetterCat", 'CabinNumber', 'TicketTypeFirstLetter']
+            "SibSp", "Parch", 'Family', 'IsFamily', "CabinLetterCat", 'CabinNumber', 'RelativeSurvived'] #, 'TicketTypeFirstLetter']
+
+# def transform_data(data, cols=all_cols):
+#     mat = np.matrix(data[cols], dtype=np.float64)
+#     cat_fs = []
+#     for i, c in enumerate(cols):
+#         if (c == 'Pclass' or c == 'EmbarkedCat' or c == 'TitleCat' 
+#             or c == 'CabinLetterCat' or c == 'TicketTypeFirstLetter'):
+#             category_features.append(i)
+#     enc = OneHotEncoder(categorical_features=cat_fs)
+#     enc.fit(mat)
+#     return enc.transform(mat, )
+    
 # cols : list of columns
 def prepare_matrices(cols=all_cols):
     # sex is binary
@@ -165,7 +182,7 @@ def prepare_matrices(cols=all_cols):
         if (c == 'Pclass' or c == 'EmbarkedCat' or c == 'TitleCat' 
             or c == 'CabinLetterCat' or c == 'TicketTypeFirstLetter'):
             category_features.append(i)
-    enc = OneHotEncoder(categorical_features=category_features)
+    enc = OneHotEncoder(categorical_features=category_features, sparse=False)
     enc.fit(mat_train)
     return tuple(map(enc.transform, [mat_train, mat_test]))
 
@@ -181,7 +198,7 @@ data_train[['Survived'] + all_cols].corr()
 
 # we have to do feature selection
 
-
+"""
 # lets find out what important features we have here
 from sklearn.feature_selection import SelectKBest, f_classif
 
@@ -195,6 +212,7 @@ scores = -np.log10(selector.pvalues_)
 
 print scores
 #plt.xticks(range(len(predictors)), predictors, rotation='vertical')
+"""
 
 
 # In[ ]:
