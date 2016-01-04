@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[2]:
+# In[133]:
 
 from collections import OrderedDict
 import numpy as np
@@ -11,24 +11,24 @@ get_ipython().magic(u'matplotlib inline')
 
 data_train = pd.read_csv("./../data/train.csv")
 data_test = pd.read_csv("./../data/test.csv")
-data_all = pd.concat([data_train, data_test])
+data_all = pd.concat([data_train, data_test], ignore_index=True)
 
 
-# In[3]:
+# In[134]:
 
 print "Missing data train set:"
 miss = len(data_train.index) - data_train.count()
 print 1. * miss / len(data_train.index) 
 
 
-# In[4]:
+# In[135]:
 
 print "Missing data test set:"
 miss = len(data_test.index) - data_test.count()
 print 1. * miss / len(data_test.index)
 
 
-# In[5]:
+# In[136]:
 
 # should create multiple data frames to have multiple plots
 survived = pd.DataFrame( data_train.Survived.value_counts() )
@@ -46,7 +46,7 @@ d = d.unstack()
 d.plot(kind="bar", rot=0, stacked=True)
 
 
-# In[6]:
+# In[137]:
 
 # Port of Embarkation (C = Cherbourg; Q = Queenstown; S = Southampton)
 # 2 NA
@@ -56,7 +56,7 @@ embarked = pd.DataFrame( data_train.Embarked.value_counts() )
 embarked.plot(kind="bar", rot=0, title="Distribution by place of embarkation")
 
 
-# In[7]:
+# In[138]:
 
 # feature distribution + survival
 
@@ -73,15 +73,32 @@ d = d.unstack()
 d.plot(kind="bar", rot=0, stacked=True)
 
 
-# In[8]:
+# In[139]:
+
+pd.DataFrame(data_train.ix[data_train.Survived == 1, 'Age']).plot(kind='hist', bins=15)
+pd.DataFrame(data_train.ix[data_train.Survived == 0, 'Age']).plot(kind='hist', bins=15)
+
+pd.DataFrame(data_train.Age).plot(kind='hist', bins=15, alpha=0.5)
+
+# and lets histograms by class
+pd.DataFrame(data_all.ix[data_all.Pclass == 1, 'Age']).plot(kind='hist', bins=20)
+pd.DataFrame(data_all.ix[data_all.Pclass == 2, 'Age']).plot(kind='hist', bins=20)
+pd.DataFrame(data_all.ix[data_all.Pclass == 3, 'Age']).plot(kind='hist', bins=20)
+
+
+
+# In[140]:
 
 # extracting title
 
-data_train["Title"] = data_train.Name.str.extract(".*, ([a-zA-Z ]*)\. .*")
-data_test["Title"] = data_test.Name.str.extract(".*, ([a-zA-Z ]*)\. .*")
+pattern = ".*, ([a-zA-Z ]*)\. .*"
+data_train["Title"] = data_train.Name.str.extract(pattern)
+data_test["Title"] = data_test.Name.str.extract(pattern)
+
+data_all["Title"] = data_all.Name.str.extract(pattern)
 
 print "Titles:"
-print data_train.Title.value_counts()
+print data_all.groupby(["Title"])['Age'].mean()
 
 # want to preserve column order
 d = OrderedDict()
@@ -90,6 +107,10 @@ d["Missing"] = lambda x: x.isnull().sum()
 d["Mean"] = np.mean
 #print
 #print data_train.groupby("Title")["Age"].agg(d)
+
+# had to predict ages here!!!
+# Mme = Missus (Mrs) 
+# Mlle = Miss (no abbreviation, unless you use: Ms).
 
 similar = ["Capt", "Col", "Don", "Dona", "Dr", "Jonkheer", "Lady", "Major", "Rev", "Sir", "the Countess"]
 data_train.Title.replace(similar, "Aristocratic", inplace=True)
@@ -100,8 +121,17 @@ data_test.Title.replace(similar, "Aristocratic", inplace=True)
 data_test.Title.replace("Ms", "Mrs", inplace=True)
 data_test["Title"].replace(["Mlle", "Mme"], "Miss", inplace=True)
 
+data_all.Title.replace(similar, "Aristocratic", inplace=True)
+data_all.Title.replace("Mlle", "Miss", inplace=True)
+data_all.Title.replace("Mme", "Mrs", inplace=True)
+# no husband or relatives found for those ladyes
+data_all.Title.replace("Ms", "Miss", inplace=True)
 
-# In[9]:
+dd = pd.DataFrame(data_all[["Age", "Title"]])
+dd.boxplot(column="Age", by="Title")
+
+
+# In[141]:
 
 from sklearn.preprocessing import LabelEncoder
 def add_cat(data, col):
@@ -113,16 +143,101 @@ add_cat(data_train, "Title")
 add_cat(data_test, "Title")
 
 
-# In[10]:
+# In[142]:
 
-# fill age na values with means from Title
-def func(x):
-    x.fillna(x.mean(), inplace=True)
-    # have to replace even if transform.. somehow
-    return x
+print data_all.groupby(['Title', 'Pclass']).Age.agg([np.mean, np.size])
+
+fillna_with_mean = lambda x: x.fillna(x.mean())
+
+data_all.Age = data_all.groupby(['Title', 'Pclass']).Age.transform(fillna_with_mean)
 
 data_train.Age = data_train.groupby("Title").Age.apply(func)
 data_test.Age = data_test.groupby("Title").Age.apply(func)
+
+
+# In[252]:
+
+# lets see what we can get from fare
+#print data_all.groupby(['Fare', 'LastName']).size()
+
+data_all['Family'] = data_all.SibSp + data_all.Parch
+
+# would start from 1 cause apply would use app twice on first group
+family_id = 0
+def app(group):
+    global family_id
+    sz = len(group)
+    arr = None
+    if group.Family.iloc[0] == 0:
+        next_id = family_id + sz
+        arr = range(family_id, next_id)
+        family_id = next_id
+    elif sz != group.Family.iloc[0] + 1:
+        arr = sz*[None]
+    else:
+        arr = sz*[family_id]
+        family_id += 1
+    return pd.DataFrame({'FamilyId' : arr}, index=group.index)
+    
+def add_family_id(data):
+    data['FamilyId'] = data.groupby(['LastName', 'Family']).apply(app).FamilyId
+    
+    
+print len(data_all[data_all.FamilyId.isnull()])
+
+#print list(data_all.index)
+add_family_id(data_all)
+print data_all
+
+
+
+
+print data_all[data_all.Family > 0].groupby(['LastName', 'Family']).size()
+
+# Thamine Thelma
+
+
+print data_all.ix[data_all.Fare == 8.5167, [ 'Name', 'Pclass', 'Fare', 'Parch', 'SibSp']]
+
+print data_all.ix[data_all.LastName == 'Thelma', [ 'Name', 'Pclass', 'Fare', 'Parch', 'SibSp']]
+
+print data_all.ix[data_all.LastName == 'Thamine', [ 'Name', 'Pclass', 'Fare', 'Parch', 'SibSp']]
+
+print data_all.ix[data_all.LastName == 'Thomas', [ 'Name', 'Pclass', 'Fare', 'Parch', 'SibSp']]
+
+print data_all.ix[data_all.LastName == 'Allen', [ 'Name', 'Pclass', 'Fare', 'Parch', 'SibSp']]
+
+print data_all.ix[data_all.LastName == 'Bowen', ['Name','Pclass', 'Fare', 'Parch', 'SibSp']]
+
+print data_all.ix[data_all.LastName == 'Bradley', ['Name','Pclass', 'Fare', 'Parch', 'SibSp']]
+
+print data_all.ix[data_all.LastName == 'Brown', ['Name','Pclass', 'Fare', 'Parch', 'SibSp']]
+
+
+
+
+
+# family but different class
+tt = data_all.groupby(['LastName']).Pclass.agg(lambda x: len(x.unique()) == 1)
+print tt[tt == False]
+
+print data_all.Fare.isnull().any()
+
+print data_all[ data_all.LastName == data_all.ix[data_all.Fare.idxmax(), 'LastName'] ]
+
+#probably we are going to categorize fare as  well, or maybe not.. we will see later
+
+d = data_all[data_all.Fare < 100]
+d = d[d.Fare < 30]
+d.Fare.plot(kind='hist', bins=20)
+
+
+
+
+print data_all.Fare.head()
+
+
+# In[ ]:
 
 # fill zero fare
 data_train.Fare.replace(0, None, inplace=True)
@@ -137,13 +252,13 @@ incorrect = lambda data: len(data) - data.Fare.count() != 0 or (data.Fare == 0).
 if incorrect(data_train) or incorrect(data_test): raise Exception("data train or test Fare NA or 0 values")
 
 
-# In[11]:
+# In[ ]:
 
 dd = pd.DataFrame(data_train[["Age", "Title"]])
 dd.boxplot(column="Age", by="Title")
 
 
-# In[12]:
+# In[ ]:
 
 # alive
 p = data_train.groupby("Title")["Survived"].agg(lambda x: 1. * x.sum()/len(x)).plot(kind="bar")
@@ -151,7 +266,7 @@ p.set_ylim([0,1])
 p
 
 
-# In[13]:
+# In[ ]:
 
 # this one i should change a bit
 data_train['PclassCat'] = data_train['Pclass'].astype('category')
@@ -159,7 +274,7 @@ ax = data_train.loc[data_train['Survived'] == 1].plot(kind='scatter', x='Age', y
 data_train.loc[data_train['Survived'] == 0].plot(kind='scatter', x='Age', y='Pclass', color='DarkGreen', label='Died', ax=ax)
 
 
-# In[14]:
+# In[ ]:
 
 miss = len(data_train.index) - data_train.count()
 h = len(miss > 0)
@@ -171,7 +286,7 @@ else:
     print "No missing data in train set"
 
 
-# In[15]:
+# In[ ]:
 
 miss = len(data_test.index) - data_test.count()
 h = len(miss > 0)
@@ -183,7 +298,7 @@ else:
     print "No missing data in test set"
 
 
-# In[16]:
+# In[ ]:
 
 # add IsCabin feature
 data_train['IsCabin'] = 0
@@ -193,26 +308,26 @@ data_test['IsCabin'] = 0
 data_test.loc[data_test.Cabin.notnull(), 'IsCabin'] = 1
 
 
-# In[17]:
+# In[ ]:
 
 print len(data_train[data_train.Fare.isnull()])
 print len(data_test[data_test.Fare.isnull()])
 
 
-# In[18]:
+# In[ ]:
 
 # find correlation between survived and fare + woman or man
 print data_train[['Fare', 'Survived']].corr()
 
 
-# In[19]:
+# In[ ]:
 
 yo = data_train.groupby(['Title', 'Pclass', 'Survived']).size().unstack()
 yo.fillna(0, inplace=True)
 print yo
 
 
-# In[34]:
+# In[146]:
 
 # working on last name
 data_all['LastName'] = data_all.Name.str.extract("(.+),.+")
@@ -225,7 +340,7 @@ data_test['LastName'] = data_train.Name.str.extract("(.+),.+")
 s = data_train[data_train.Survived == 1].LastName.unique()
 survived_lastnames = set(s)
 
-sz = data_all.groupby('LastName', group_keys='lol').size()
+sz = data_train.groupby('LastName', group_keys='lol').size()
 for (index, value) in sz.iteritems():
     if value == 1: survived_lastnames.discard(value)
 
@@ -236,6 +351,11 @@ data_test['RelativeSurvived'] = data_test['LastName'].apply(cond)
 
 print "Do we have null values somewhere in LastName"
 print data_all.LastName.isnull().any()
+
+
+# In[ ]:
+
+print data_all.groupby(['LastName', 'Pclass', 'Fare']).size()
 
 
 # In[ ]:

@@ -1,14 +1,14 @@
 
 # coding: utf-8
 
-# In[43]:
+# In[24]:
 
 import research
 reload(research)
 from research import *
 
 
-# In[44]:
+# In[25]:
 
 # lets put here all imports that we need
 import random 
@@ -18,7 +18,7 @@ from sklearn.grid_search import GridSearchCV
 from sklearn.cross_validation import cross_val_score
 
 
-# In[45]:
+# In[26]:
 
 solver = None
 print all_cols
@@ -27,12 +27,22 @@ def solve(cols=all_cols):
     # have to split train 80/20
     # classification reports asks for predicates....
     global solver
-    solver = LogRegCV(n_jobs=-1)
+    solver = LogRegCV(n_jobs=-1, cv=10)
     solver.fit(train, data_train.Survived)
     res = solver.predict(mission)
     res = pd.DataFrame({"PassengerId": data_test.PassengerId, "Survived": res})
     res.to_csv("../output/logic_0.csv", index=False)
-    #print solver.score(X_test, y_test)
+    print solver.C_
+    
+    from sklearn.cross_validation import train_test_split
+    X_train, X_test, y_train, y_test = train_test_split(train, data_train.Survived, test_size=0.2, random_state=0)
+    solver = LogRegCV(n_jobs=-1, cv=3)
+    solver.fit(X_train, y_train)
+    res = solver.predict(mission)
+    res = pd.DataFrame({"PassengerId": data_test.PassengerId, "Survived": res})
+    res.to_csv("../output/logic_0.csv", index=False)
+    
+    print solver.score(X_test, y_test)
 
     #y_test_pred = solver.predict(X_test)
     #print metrics.classification_report(y_test, y_test_pred)
@@ -54,8 +64,10 @@ def solve(cols=all_cols):
     p = solver.predict(tt[females])
     print class_report(data_train.Survived[females], p)
     """
+    
     scores = cross_val_score(solver, train, data_train.Survived, cv=10)
-    print min(scores)
+    print scores
+    print np.mean(scores)
 
     
 #solve()

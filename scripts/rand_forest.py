@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[26]:
+# In[1]:
 
 # do reload as top level
 import research
@@ -9,7 +9,7 @@ reload(research)
 from research import *
 
 
-# In[7]:
+# In[4]:
 
 # lets put here all imports that we need
 import random 
@@ -47,7 +47,7 @@ print solver.score(X_test, y_test)
 # let's start with simple decision tree and make it work
 
 
-# In[20]:
+# In[5]:
 
 train, mission = research.prepare_matrices()
 # have to split train 80/20

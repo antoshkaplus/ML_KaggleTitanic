@@ -1,24 +1,24 @@
 
 # coding: utf-8
 
-# In[153]:
+# In[2]:
 
 import init
 reload(init)
 from init import * 
 
 
-# In[ ]:
+# In[3]:
 
 from sklearn.metrics import classification_report as class_report
 
 
-# In[154]:
+# In[4]:
 
 data_train.columns
 
 
-# In[155]:
+# In[5]:
 
 def add_sex_cat(data):
     # all are man
@@ -30,7 +30,7 @@ add_sex_cat(data_train)
 add_sex_cat(data_test)
 
 
-# In[156]:
+# In[6]:
 
 def add_embarked_cat(data):
     data["EmbarkedCat"] = 0
@@ -41,7 +41,7 @@ add_embarked_cat(data_train)
 add_embarked_cat(data_test)
 
 
-# In[157]:
+# In[7]:
 
 # lets add IsFamily column
 def add_is_family(data):
@@ -54,12 +54,12 @@ add_is_family(data_train)
 add_is_family(data_test)
 
 
-# In[158]:
+# In[8]:
 
 data_train.head()
 
 
-# In[184]:
+# In[9]:
 
 from sklearn.preprocessing import LabelEncoder
 
@@ -82,6 +82,7 @@ def add_cabin_letter(data):
     enc.fit(data.CabinLetter)
     # do we really need this???
     data['CabinLetterCat'] = enc.transform(data.CabinLetter) 
+    data['CabinLetterNum'] = data.CabinLetterCat
     
     # combine number and letter of cabin
     #data['CabinLetNumComb'] = data['CabinLetterCat'] .map('${:,.2f}'.format)
@@ -128,7 +129,7 @@ yo = data_train.groupby(['CabinLetter', 'Survived']).size()
 #print yo
 
 
-# In[160]:
+# In[10]:
 
 from sklearn.linear_model import LogisticRegressionCV as LogRegCV
 from sklearn.preprocessing import OneHotEncoder
@@ -140,24 +141,24 @@ from sklearn.ensemble import RandomForestClassifier as RandForest
 print metrics.SCORERS.keys()
 
 
-# In[161]:
+# In[11]:
 
 print data_train.TitleCat.max() + 1
 print len(data_train.Pclass.value_counts())
 print len(data_train.SexCat.value_counts())
 
 
-# In[162]:
+# In[12]:
 
 # lets see what we can do with the ticket
 
 
-# In[163]:
+# In[13]:
 
 # don't need IsFamily as Family exists
 # after adding title logic reg became worth. random tree becomes better
 all_cols = ["TitleCat", "Pclass", "SexCat", "Age", "Fare", "EmbarkedCat", 
-            "SibSp", "Parch", 'Family', 'IsFamily', "CabinLetterCat", 'CabinNumber', 'RelativeSurvived'] #, 'TicketTypeFirstLetter']
+            "SibSp", "Parch", 'Family', 'IsFamily', "CabinLetterCat", "CabinLetterNum", 'CabinNumber']#, 'RelativeSurvived'] #, 'TicketTypeFirstLetter']
 
 # def transform_data(data, cols=all_cols):
 #     mat = np.matrix(data[cols], dtype=np.float64)
@@ -187,12 +188,12 @@ def prepare_matrices(cols=all_cols):
     return tuple(map(enc.transform, [mat_train, mat_test]))
 
 
-# In[164]:
+# In[14]:
 
 data_train[['Survived'] + all_cols].corr()
 
 
-# In[165]:
+# In[ ]:
 
 # big Pclass, IsCabin;
 
